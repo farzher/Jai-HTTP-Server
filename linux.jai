@@ -344,10 +344,10 @@ add_to_epoll_fd_list :: (epoll_fd: s32, fd: s32, ptr: *void, ep_events: EPOLL_EV
 
 
 // #import,file "modules/mybasic";
-#import "openssl";
-#import "mybasic";
-#import "mysocket";
-#import "epoll";
+#import,dir "modules/openssl";
+#import,dir "modules/mybasic";
+#import,dir "modules/mysocket";
+#import,dir "modules/epoll";
 
 #import "File";
 #import "String";
