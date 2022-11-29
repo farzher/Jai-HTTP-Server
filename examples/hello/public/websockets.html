@@ -1,0 +1,36 @@
+
+
+
+
+
+
+
+
+
+
+
+
+open the dev tools console and view source to see what's happening with the websocket
+
+
+
+
+
+
+<script>
+  var ws = new WebSocket('ws://' + document.location.host + '/ws')
+
+  ws.onopen = () => console.log('onopen')
+  ws.onclose = () => console.log('onclose')
+  ws.onmessage = (msgevent) => { console.log('onmessage:', msgevent.data) }
+  ws.onerror = (error) => console.log('onerror', error)
+
+  var username = uuidv4()
+  setInterval(() => {
+    ws.send(`${username}: spam`)
+  }, 1000)
+
+
+  function uuidv4() {return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c => (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16) );
+}
+</script>

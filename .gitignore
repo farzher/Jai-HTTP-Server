@@ -1,0 +1,14 @@
+.build
+*.pdb
+*.exe
+*.dll
+*.manifest
+*.db
+*.lib
+*.suo
+README.md
+LICENSE
+
+ignore/
+
+first
