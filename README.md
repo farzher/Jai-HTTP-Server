@@ -1,7 +1,7 @@
 # Jai-HTTP-Server
-unstable http server, focused on maximum performance.
+Focused on maximum performance.
 
-HTTP / HTTPS / Websockets / epoll threading / Brotli compression
+Features: HTTP / HTTPS / Websockets / epoll threading / Brotli compression
 
 Designed for Linux, but also runs on Windows for development.
 
