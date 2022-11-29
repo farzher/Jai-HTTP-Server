@@ -6,7 +6,6 @@
 *.db
 *.lib
 *.suo
-README.md
 LICENSE
 
 ignore/
