@@ -16,16 +16,16 @@ main :: () {
   any("*", (request: *Request) { mylog(request.method, request.path); });
 
   // using path parameters
-  get("/hello/:name", (request: *Request) {;
+  get("/hello/:name", (request: *Request) {
     send_html(request, tprint("Hello %!", request.params["name"]));
   });
-  
+
+  // serve static files from the public folder
+  static("public");
+
   // websocket chat server
   ws_server := websocket_listen("/chat");
   ws_server.onmsg = (ws: *Websocket, msg: string) { ws.broadcast(ws, msg); };
-
-  // serve all files in the public folder
-  static("public");
 }
 ```
 
