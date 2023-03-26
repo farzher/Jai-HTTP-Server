@@ -1,4 +1,4 @@
-libc :: #foreign_system_library "libc";
+libc :: #system_library "libc";
 
 using EPOLL_EVENTS :: enum_flags u32 {
   EPOLLIN       :: 0x001;

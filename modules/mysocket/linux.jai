@@ -20,7 +20,7 @@ send :: inline (fd: s32, msg: string) -> s64 {
 
 #scope_file
 #import "POSIX";
-libc :: #foreign_system_library "libc";
+libc :: #system_library "libc";
 
 
 
@@ -270,4 +270,4 @@ libc :: #foreign_system_library "libc";
 
 // #import "Basic";
 // #import "POSIX";
-// libc :: #foreign_system_library "libc";
+// libc :: #system_library "libc";

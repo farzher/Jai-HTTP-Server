@@ -159,9 +159,9 @@ ERR_get_error :: () -> u64 #foreign libssl;
 ERR_error_string :: (e: u64, buf: *u8) -> *u8 #foreign libssl;
 
 
-// libssl :: #foreign_library,no_dll "linux/libssl";
-// libcrypto :: #foreign_library,no_dll "linux/libcrypto";
-// libdl :: #foreign_library,no_dll "linux/libdl";
-libssl :: #foreign_library "linux/libssl";
-libcrypto :: #foreign_library "linux/libcrypto";
+// libssl :: #library,no_dll "linux/libssl";
+// libcrypto :: #library,no_dll "linux/libcrypto";
+// libdl :: #library,no_dll "linux/libdl";
+libssl :: #library "linux/libssl";
+libcrypto :: #library "linux/libcrypto";
 

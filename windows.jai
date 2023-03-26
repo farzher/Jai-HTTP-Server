@@ -72,7 +72,7 @@ listen_thread_proc :: (listen_thread: *Thread) -> s64 {
 
   bind(listen_socket, thread_data.ip, thread_data.port);
   listen(listen_socket, BACKLOG);
-  log("HTTP Server listening on %:%", thread_data.ip, thread_data.port);
+  log("HTTP Server listening on http://%:%", thread_data.ip, thread_data.port);
 
 
   #if CONCURRENCY == .THREAD_POOL {

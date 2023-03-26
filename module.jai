@@ -28,7 +28,9 @@ send_json :: (request: *Request, json: string) {
   request.response_sent = true;
 }
 
-send_file :: (request: *Request, filename: string) {
+send_file :: (request: *Request, raw_filename: string) {
+  filename := normalize_filename(raw_filename);
+
   file_cache_record, success := file_cache_get_or_create(filename);
   if !success return;
 
@@ -222,8 +224,11 @@ File_Cache_Record :: struct {
 }
 file_cache: Table(string, File_Cache_Record);
 file_cache_get_or_create :: (filename: string) -> File_Cache_Record, bool {
-  record, found := table_find(*file_cache, filename);
-  if found then return record, true;
+
+  #if OS != .WINDOWS { // don't actually cache files on windows. for better development experience
+    record, found := table_find(*file_cache, filename);
+    if found then return record, true;
+  }
 
   filetext, success := read_entire_file(filename);
   if !success return .{}, false;
@@ -259,7 +264,6 @@ to_METHOD :: (str: string) -> METHOD {
 
 
 
-
 extension2contenttype :: (filename: string) -> string {
   index_of_dot := find_index_from_right(filename, ".");
   if index_of_dot == -1 return "text/html";
@@ -287,6 +291,54 @@ extension2contenttype :: (filename: string) -> string {
 
 normalize_path :: (path: string) -> string { return trim(path, "/"); }
 
+normalize_filename :: (raw_filename: string) -> string {
+  filename := raw_filename;
+
+  { // strip questionmark from filename if it exists ex: main.js?293849203
+    questionmark_location_in_filename := find_index_from_left(filename, "?");
+    if questionmark_location_in_filename != -1 {
+      filename.count = questionmark_location_in_filename;
+    }
+  }
+
+  { // replace %xx with xx conveted to a hex byte
+
+    // tmp_filename := talloc_string(filename.count);
+    // tmp_filename := copy_string(filename, allocator=tallocator);
+
+    start_index := 0;
+    while true {
+      percent_location_in_filename := find_index_from_left(filename, "%", start_index);
+      percent_escape_exists := percent_location_in_filename != -1;
+      if !percent_escape_exists break;
+      // todo check that there's actually 2 hex chars after the percent
+      // ^ this probably can currently crash the server
+      // todo make sure it's valid hex? not sure how this should be handled if it's not? probably just ignored?
+      hex_chars := substr(filename, percent_location_in_filename + 1, 2);
+      string_byte := hex_chars_to_byte(hex_chars);
+
+      filename.data[percent_location_in_filename] = string_byte;
+      copy_starting_from := percent_location_in_filename + 1 + 2;
+      memcpy(filename.data + percent_location_in_filename + 1, filename.data + copy_starting_from, filename.count-copy_starting_from);
+      filename.count -= 2;
+
+      start_index = percent_location_in_filename + 1;
+    }
+  }
+
+  return filename;
+}
+
+hex_char_to_int :: (char: u8) -> u8 {
+  if char >= #char "a" return (char - #char "a" + 0xA);
+  if char >= #char "A" return (char - #char "A" + 0xA);
+  if char >= #char "0" return (char - #char "0");
+  return 1;
+}
+hex_chars_to_byte :: (chars: string) -> u8 {
+  assert(chars.count == 2);
+  return hex_char_to_int(chars[0]) * 16 + hex_char_to_int(chars[1]);
+}
 
 
 

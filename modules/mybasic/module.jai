@@ -112,7 +112,7 @@ mapnumber :: (value: float, from1: float, from2: float, to1: float, to2:float, e
 
   if clamp {
     if ratio > 1 then ratio = 1;
-    else if ratio < -1 then ratio = -1;
+    else if ratio < 0 then ratio = 0;
   }
 
   return bdist*ratio + to1;
@@ -336,7 +336,7 @@ my_find_or_add :: (table: *Table, key: table.Key_Type) -> *table.Value_Type, fou
 #scope_file
 #if OS == .WINDOWS {
   #import "Windows";
-  kernel32 :: #foreign_system_library "kernel32";
+  kernel32 :: #system_library "kernel32";
   stdinhandle: HANDLE;
   ReadConsoleA :: (hConsoleHandle: HANDLE, buff : *u8, chars_to_read : s32,  chars_read : *s32, lpInputControl := *void ) -> BOOL #foreign kernel32;
 

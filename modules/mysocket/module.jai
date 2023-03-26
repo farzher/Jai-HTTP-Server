@@ -69,6 +69,8 @@ socket_close :: (socket: Socket) {
     socketinfo.sin_port = htons(port);
     if bind(s.socket, cast(*sockaddr)*socketinfo, size_of(sockaddr_in)) < 0 {
       mylog("bind error", WSAGetLastError());
+      mylog("port", port, "already in use (probably)");
+      exit(1);
     }
   }
 
@@ -140,7 +142,7 @@ push_tallocator :: () #expand {
 
 #if OS == .LINUX {
   #import "POSIX";
-  libc :: #foreign_system_library "libc";
+  libc :: #system_library "libc";
 }
 
 
