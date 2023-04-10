@@ -5,7 +5,7 @@ Features: HTTP / HTTPS / Websockets / epoll threading / Brotli compression
 
 Designed for Linux, but also runs on Windows for development.
 
-### Example [examples/hello/first.jai](https://github.com/farzher/Jai-HTTP-Server/blob/master/examples/hello/first.jai)
+## Example [examples/hello/first.jai](https://github.com/farzher/Jai-HTTP-Server/blob/master/examples/hello/first.jai)
 ```c
 #import "http_server";
 
@@ -29,11 +29,14 @@ main :: () {
 }
 ```
 
-### Benchmarks
+## Benchmarks
 
 - CPU: `Intel 8700k (6 cores, 12 threads)`
 - OS: `Ubuntu-22.04 (WSL)`
 - Benchmark Command: `wrk --latency -t6 -c100 -d10 http://localhost`
+
+![image](https://user-images.githubusercontent.com/1005136/230873204-978f5ee2-cb9a-4848-a439-8d8d09ad70f4.png)
+
 
 
 #### Jai - [Jai-HTTP-Server](https://github.com/farzher/Jai-HTTP-Server) | Req/Sec    100.19k
@@ -120,6 +123,6 @@ Transfer/sec:      1.51MB
 
 
 
-### Usage
+## Usage
 0. have the compiler v0.1.60
 1. run `examples/hello/run.bat` or `examples/hello/run.sh`
