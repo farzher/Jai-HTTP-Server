@@ -31,9 +31,9 @@ main :: () {
 
 ### Benchmarks
 
-- Processor: `Intel 8700k (6 cores, 12 threads)`
-- Envirenment: `Ubuntu-22.04 (WSL)`
-- Benchmark tool: `wrk --latency -t6 -c100 -d10 http://localhost`
+- CPU: `Intel 8700k (6 cores, 12 threads)`
+- OS: `Ubuntu-22.04 (WSL)`
+- Benchmark Command: `wrk --latency -t6 -c100 -d10 http://localhost`
 
 
 #### Jai - [Jai-HTTP-Server](https://github.com/farzher/Jai-HTTP-Server) | Req/Sec    100.19k
