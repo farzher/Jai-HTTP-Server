@@ -1,8 +1,13 @@
 BACKLOG               :: 1024;
-THREAD_POOL_COUNT     :: #run get_number_of_processors(); #import "System";
-// THREAD_POOL_COUNT     :: 1;
 MAX_EVENTS            :: BACKLOG;
 REQUEST_BUFFER_LEN    :: 1024 * 2;
+
+// performance is signifigantly worse when we don't divide num processors by 2!
+// 8700k (6 cores, 12 threads)
+// wrk --latency -t6 -c100 -d10 http://localhost
+// THREAD_POOL_COUNT :: #run get_number_of_processors()      # Req/Sec    52.76k
+// THREAD_POOL_COUNT :: #run get_number_of_processors() / 2  # Req/Sec    81.54k
+THREAD_POOL_COUNT     :: #run get_number_of_processors() / 2; #import "System";
 
 thread_pool           : [THREAD_POOL_COUNT] Thread;
 epoll_fd_pool         : [THREAD_POOL_COUNT] s32;
@@ -13,7 +18,7 @@ request_pool          : Table(Socket, Request);
 
 listen_socket: Socket;
 listen_called: bool;
-http_listen :: (port: u16 = 80, ip: string = "127.0.0.1") {
+http_listen :: (port: u16 = 80, ip: string = "0.0.0.0") {
   assert(!listen_called, "cannot call listen multiple times");
   listen_called = true;
 
@@ -40,7 +45,7 @@ http_listen :: (port: u16 = 80, ip: string = "127.0.0.1") {
 
 listen_socket_ssl: Socket;
 listen_called_ssl: bool;
-https_listen :: (port: u16 = 443, ip: string = "127.0.0.1", certificate: string = "", privatekey: string = "") {
+https_listen :: (port: u16 = 443, ip: string = "0.0.0.0", certificate: string = "", privatekey: string = "") {
   assert(listen_called, "http_listen must be called first for now. because i'm lazy to deal with threads");
   assert(!listen_called_ssl, "cannot call listen multiple times");
   listen_called_ssl = true;
@@ -325,7 +330,7 @@ setnonblocking :: (fd: s32) {
   fcntl(fd, F_SETFL, new_option);
 }
 
-add_to_epoll_fd_list :: (epoll_fd: s32, fd: s32, ptr: *void, ep_events: EPOLL_EVENTS, $mod: bool = false) {
+add_to_epoll_fd_list :: (epoll_fd: s32, fd: s32, ptr: *void, ep_events: u32, $mod: bool = false) {
   // mylog("adding to epoll list", fd);
   event: epoll_event;
   if ptr event.data.ptr = ptr;
@@ -347,7 +352,6 @@ add_to_epoll_fd_list :: (epoll_fd: s32, fd: s32, ptr: *void, ep_events: EPOLL_EV
 #import,dir "modules/openssl";
 #import,dir "modules/mybasic";
 #import,dir "modules/mysocket";
-#import,dir "modules/epoll";
 
 #import "File";
 #import "String";

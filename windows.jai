@@ -23,7 +23,7 @@ ListenThreadData   :: struct {ip:string; port:u16;};
 listen_thread_data : ListenThreadData;
 listen_thread      : Thread;
 listen_called      : bool;
-http_listen :: (ip: string = "127.0.0.1", port: u16 = 80) {
+http_listen :: (ip: string = "0.0.0.0", port: u16 = 80) {
   listen_called = true;
   listen_thread_data.ip = ip;
   listen_thread_data.port = port;
@@ -31,7 +31,7 @@ http_listen :: (ip: string = "127.0.0.1", port: u16 = 80) {
   thread_start(*listen_thread);
 }
 
-https_listen :: (port: u16 = 443, ip: string = "127.0.0.1", certificate: string = "", privatekey: string = "") {
+https_listen :: (port: u16 = 443, ip: string = "0.0.0.0", certificate: string = "", privatekey: string = "") {
   die("https_listen is not implement on windows");
 }
 
@@ -72,7 +72,8 @@ listen_thread_proc :: (listen_thread: *Thread) -> s64 {
 
   bind(listen_socket, thread_data.ip, thread_data.port);
   listen(listen_socket, BACKLOG);
-  log("HTTP Server listening on http://%:%", thread_data.ip, thread_data.port);
+  ip_to_display := ifx thread_data.ip == "0.0.0.0" then "localhost" else thread_data.ip;
+  log("HTTP Server listening on http://%:%", ip_to_display, thread_data.port);
 
 
   #if CONCURRENCY == .THREAD_POOL {
