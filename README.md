@@ -36,7 +36,7 @@ main :: () {
 - Benchmark tool: `wrk --latency -t6 -c100 -d10 http://localhost`
 
 
-##### Jai - [Jai-HTTP-Server](https://github.com/farzher/Jai-HTTP-Server) | Req/Sec    100.19k
+#### Jai - [Jai-HTTP-Server](https://github.com/farzher/Jai-HTTP-Server) | Req/Sec    100.19k
 ```
   Thread Stats   Avg      Stdev     Max   +/- Stdev
     Latency   156.26us  160.79us   9.55ms   91.77%
@@ -55,7 +55,7 @@ Transfer/sec:     73.46MB
 ```
 
 
-##### Go - [fasthttp](https://github.com/valyala/fasthttp) | Req/Sec    83.65k
+#### Go - [fasthttp](https://github.com/valyala/fasthttp) | Req/Sec    83.65k
 ```
   Thread Stats   Avg      Stdev     Max   +/- Stdev
     Latency   377.51us    1.04ms  30.35ms   93.91%
@@ -74,7 +74,7 @@ Transfer/sec:     70.34MB
 ```
 
 
-##### C - [nginx](https://nginx.org/en/) | Req/Sec    26.98k
+#### C - [nginx](https://nginx.org/en/) | Req/Sec    26.98k
 ```
   Thread Stats   Avg      Stdev     Max   +/- Stdev
     Latency     2.32ms    4.56ms  51.44ms   88.15%
@@ -94,7 +94,7 @@ Transfer/sec:     39.53MB
 
 
 
-##### Node.js - [express](https://github.com/expressjs/express) | Req/Sec     1.11k
+#### Node.js - [express](https://github.com/expressjs/express) | Req/Sec     1.11k
 ```
   Thread Stats   Avg      Stdev     Max   +/- Stdev
     Latency    14.54ms    2.43ms  53.01ms   92.01%
