@@ -35,7 +35,8 @@ main :: () {
 - OS: `Ubuntu-22.04 (WSL)`
 - Benchmark Command: `wrk --latency -t6 -c100 -d10 http://localhost`
 
-![image](https://user-images.githubusercontent.com/1005136/230873204-978f5ee2-cb9a-4848-a439-8d8d09ad70f4.png)
+![image](https://user-images.githubusercontent.com/1005136/230886599-d12452b7-7d65-4f73-b1f1-f5a54d3e4926.png)
+
 
 
 
