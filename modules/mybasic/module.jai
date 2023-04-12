@@ -210,103 +210,18 @@ offset_of :: (type: Type, name: string) -> int #expand {
 }
 
 
-// .-. Error: An operator procedure must, as one of its first two arguments, take either a struct or a pointer to a struct. (Custom operators are not for basic types like strings or numbers.)
-// operator + :: (a: string, b: string) -> string {
-//   result := talloc_string(a.count+b.count);
-//   memcpy(result.data        , a.data, a.count);
-//   memcpy(result.data+a.count, b.data, b.count);
-//   return result;
-// }
-
-// tstr
-TStr :: struct {#as str: string; }
-tstr: TStr;
-to_tstr :: (str: string) -> TStr {
-   s: TStr = ---;
-   s.str = str;
-   return s;
-}
-tstr_join :: (a:string, b:string) -> string {
-    bytes := 0;
-    bytes += a.count;
-    bytes += b.count;
-    if !bytes return "";
-
-    result: string;
-    result.count = bytes;
-    result.data  = talloc(bytes);
-    assert(result.data != null);
-
-    cursor := result.data;
-    memcpy(cursor, a.data, a.count);
-    cursor += a.count;
-    memcpy(cursor, b.data, b.count);
-
-    cursor += b.count;
-    assert(cursor == result.data + result.count);
-
-    return result;
-}
-operator + :: (a: TStr, b: TStr) -> TStr {
-  return to_tstr(tstr_join(a.str, b.str));
-}
-operator + :: (a: TStr, b: string) -> TStr #symmetric {
-   return a + to_tstr(b);
-}
-operator + :: (a: TStr, b: int) -> TStr #symmetric {
-   return to_tstr(tprint("%+%", a.str, b));
-}
-
-
-
-interp :: (_str: string) -> string #expand {
-  #insert -> string {
-    String :: #import "String";
-
-    builder: String_Builder;
-
-    str := String.replace(_str, "\n", "\\n");
-
-    codestart := 0;
-    strstart := 0;
-
-    for i: 0 .. str.count-1 {
-
-      //
-      if (str[i] == #char"#" || str[i] == #char"%") && str[i+1] == #char"{" {
-
-        append(*builder, tstr+ "+\""+String.slice(str, strstart, i-strstart)+"\"");
-
-        i += 2;
-        codestart = i;
-        continue;
-      }
-
-      if codestart {
-        if str[i] == #char"}" {
-          code := String.slice(str, codestart, i-codestart);
-          code = String.replace(code, "'", "\"");
-          append(*builder, tstr+ "+("+code+")");
-          i += 1;
-          strstart = i;
-          codestart = 0;
-        }
-      }
-
-      if i == str.count-1 {
-        append(*builder, tstr+ "+\""+String.slice(str, strstart, strstart+i+1)+"\"");
-      }
-    }
-
-    return tstr+ "return tstr" + builder_to_string(*builder) + ";";
-  }
-}
-
-
-
-Global :: (str: string) #expand {
+Global :: (code: Code) #expand {
   Compiler :: #import "Compiler";
-  #run Compiler.add_build_string(str);
+  #run Compiler.add_build_string(tprint("%;", code_to_string(code)));
+}
+
+code_to_string :: (code: Code) -> string #expand {
+  PP       :: #import "Program_Print";
+  Compiler :: #import "Compiler";
+  code_node := Compiler.compiler_get_nodes(code);
+  builder: String_Builder;
+  PP.print_expression(*builder, code_node);
+  return builder_to_string(*builder, allocator=temp);
 }
 
 

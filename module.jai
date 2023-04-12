@@ -5,7 +5,23 @@
 #if OS == .WINDOWS #load "windows.jai";
 #if OS == .LINUX   #load "linux.jai";
 
+// the main entry point is http_listen, which is defined in linux.jai and windows.jai
 
+
+
+
+// todo: this method of looping through middlewares is slow @perf
+middlewares: [..]Middleware;
+
+Middleware :: struct {
+  method: METHOD;
+  path: string;
+  cb: (*Request)->();
+}
+
+get  :: (path: string, cb: (*Request)->()) {array_add(*middlewares, .{method=.GET , cb=cb, path=normalize_path(path)}); }
+post :: (path: string, cb: (*Request)->()) {array_add(*middlewares, .{method=.POST, cb=cb, path=normalize_path(path)}); }
+any  :: (path: string, cb: (*Request)->()) {array_add(*middlewares, .{method=.ANY , cb=cb, path=normalize_path(path)}); }
 
 
 
@@ -18,7 +34,6 @@ send_html :: (request: *Request, html: string, status_code: u16 = 200, content_t
   http_response := tprint("HTTP/1.1 % OK\r\nConnection: Keep-Alive\r\nContent-Length: %\r\nContent-Type: %; charset=UTF-8\r\n%Server: Jai\r\n\r\n%", status_code, html.count, content_type, content_encoding_header, html);
 
   mysocket_write(request.socket, http_response);
-  // mylog("Respon:", request.socket.socket);
   request.response_sent = true;
 }
 
@@ -34,9 +49,14 @@ send_file :: (request: *Request, raw_filename: string) {
   file_cache_record, success := file_cache_get_or_create(filename);
   if !success return;
 
+  // for very small files, it's possible that brotli encoding is longer than the raw content.
+  // in that case the brotli api will return the brotli encoding as ""
+  // and so we will return the raw content instead, even though the client accepts br encoding
+  are_we_returning_br := does_request_accept_encoding(request, "br") && file_cache_record.brotli != "";
+
+  content := ifx are_we_returning_br then file_cache_record.brotli else file_cache_record.rawcontent;
+  content_encoding := ifx are_we_returning_br then "br" else "";
   content_type := extension2contenttype(filename);
-  content := ifx does_request_accept_encoding(request, "br") then file_cache_record.brotli else file_cache_record.rawcontent;
-  content_encoding := ifx does_request_accept_encoding(request, "br") then "br" else "";
   send_html(request, content, content_type=content_type, content_encoding=content_encoding);
 }
 
@@ -44,10 +64,9 @@ send_file :: (request: *Request, raw_filename: string) {
 parseheaders :: true;
 Request :: struct {
   #as socket      : MySocket;
-  raw             : string;
-  raw_allocated   : int;
-  body            : string;
-  path            : string;
+  raw             : string; // entire raw http request
+  body            : string; // pointer into raw
+  path            : string; // pointer into raw
   params          : Table(string, string);
   content_length  : u32;
   method          : METHOD;
@@ -66,13 +85,10 @@ Request :: struct {
     startofline   : u32;
   }
 }
-operator == :: inline (a: Request, b: Request) -> bool {
-  return a.socket == b.socket;
-}
+operator == :: inline (a: Request, b: Request) -> bool {return a.socket == b.socket; }
 
 does_request_accept_encoding :: (request: *Request, encoding: string) -> bool {
   if !request.accept_encoding return false;
-  #import "String";
   for encoding: split(request.accept_encoding, ",") {
     if trim(encoding, " ") == encoding return true;
   }
@@ -101,7 +117,6 @@ handle_request :: (request: *Request) {
 
     middleware_contains_params := contains_prams(middleware.path);
     if middleware_contains_params {
-      #import "String";
       middleware_path_split := split(middleware.path, "/");
       request_path_split := split(path_normal, "/");
       for middleware_path_split {
@@ -124,12 +139,10 @@ handle_request :: (request: *Request) {
 
 
   contains_prams :: (s: string) -> bool {
-    #import "String";
     return contains(s, ":");
   }
 
   is_path_match :: (a: string, b: string) -> bool {
-    #import "String";
     if !contains_prams(a) return a == b;
 
     parts_a := split(a, "/");
@@ -155,64 +168,27 @@ handle_request :: (request: *Request) {
 
 
 
-
-middlewares: [..]Middleware;
-
-Middleware :: struct {
-  method: METHOD;
-  path: string;
-  cb: (*Request)->();
-}
-
-get :: (path: string, cb: (*Request)->()) {
-  middleware: Middleware;
-  middleware.path = normalize_path(path);
-  middleware.cb = cb;
-  middleware.method = .GET;
-  array_add(*middlewares, middleware);
-}
-
-post :: (path: string, cb: (*Request)->()) {
-  middleware: Middleware;
-  middleware.path = normalize_path(path);
-  middleware.cb = cb;
-  middleware.method = .POST;
-  array_add(*middlewares, middleware);
-}
-
-any :: (path: string, cb: (*Request)->()) {
-  middleware: Middleware;
-  middleware.path = normalize_path(path);
-  middleware.cb = cb;
-  middleware.method = .ANY;
-  array_add(*middlewares, middleware);
-}
-
-
-
-static_folder: string;
+the_static_folder_to_serve: string;
 cwd: string;
 static :: (folder: string) {
 
   assert(folder.count > 0, "folder to serve can't be an empty string");
-  assert(static_folder.count == 0, "you can't currently static serve more than 1 folder");
+  assert(the_static_folder_to_serve.count == 0, "you can't currently static serve more than 1 folder");
 
-  static_folder = folder;
-  tmpcwd := get_working_directory();
-  cwd.data = alloc(tmpcwd.count);
-  cwd.count = tmpcwd.count;
-  memcpy(cwd.data, tmpcwd.data, tmpcwd.count);
-  tfree();
+  the_static_folder_to_serve = folder;
+  cwd = copy_string(get_working_directory());
 
   get("*", (request: *Request) {;
-    path := join(cwd, "/", static_folder, request.path); #import "String";
 
+    // if the path ends wht a / (it's a folder), then we'll add index.html to the end of the path to load that.
+    path: string;
     if ends_with(request.path, "/") {
-      path = tstr + path + "index.html";
+      path = join(cwd, "/", the_static_folder_to_serve, request.path, "index.html", allocator=tallocator);
+    } else {
+      path = join(cwd, "/", the_static_folder_to_serve, request.path, allocator=tallocator);
     }
 
     send_file(request, path);
-    tfree();
   });
 }
 
@@ -222,10 +198,21 @@ File_Cache_Record :: struct {
   rawcontent: string;
   brotli: string;
 }
+
+// storing hash of the filename instead of string incase the string is in temp storage!
+// given_hash_function just returns itself since its already hashed... no need to hash twice, right? @perf
+// file_cache: Table(u32, File_Cache_Record, given_hash_function=(x: $T) -> u32 {return x;});
+// file_cache: Table(u32, File_Cache_Record);
 file_cache: Table(string, File_Cache_Record);
+
 file_cache_get_or_create :: (filename: string) -> File_Cache_Record, bool {
 
+  // Hash  :: #import "Hash";
+  // filename_hash := Hash.get_hash(filename);
+
+
   #if OS != .WINDOWS { // don't actually cache files on windows. for better development experience
+    // record, found := table_find(*file_cache, filename_hash);
     record, found := table_find(*file_cache, filename);
     if found then return record, true;
   }
@@ -233,7 +220,13 @@ file_cache_get_or_create :: (filename: string) -> File_Cache_Record, bool {
   filetext, success := read_entire_file(filename);
   if !success return .{}, false;
 
-  file_cache_record := table_set(*file_cache, filename, .{});
+
+  // file_cache_record := table_set(*file_cache, filename_hash, .{});
+
+  // just incase filename is in temporary storage
+  // we have to leak a copy of it here to store in the table that won't turn to garbage
+  filename_allocated := copy_string(filename);
+  file_cache_record := table_set(*file_cache, filename_allocated, .{});
   file_cache_record.rawcontent = filetext;
 
   content_type := extension2contenttype(filename);
@@ -295,20 +288,16 @@ normalize_filename :: (raw_filename: string) -> string {
   filename := raw_filename;
 
   { // strip questionmark from filename if it exists ex: main.js?293849203
-    questionmark_location_in_filename := find_index_from_left(filename, "?");
+    questionmark_location_in_filename := find_index_from_left(filename, #char "?");
     if questionmark_location_in_filename != -1 {
       filename.count = questionmark_location_in_filename;
     }
   }
 
   { // replace %xx with xx conveted to a hex byte
-
-    // tmp_filename := talloc_string(filename.count);
-    // tmp_filename := copy_string(filename, allocator=tallocator);
-
     start_index := 0;
     while true {
-      percent_location_in_filename := find_index_from_left(filename, "%", start_index);
+      percent_location_in_filename := find_index_from_left(filename, #char "%", start_index);
       percent_escape_exists := percent_location_in_filename != -1;
       if !percent_escape_exists break;
       // todo check that there's actually 2 hex chars after the percent
@@ -363,3 +352,7 @@ mysocket_write :: (socket: Socket, buffer: string) -> s64 {
 
   return send(socket, buffer.data, xx buffer.count, 0);
 }
+
+
+
+#import "String";

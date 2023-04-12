@@ -164,21 +164,6 @@ thread_request_proc :: (thread: *Thread) -> s64 {
 
 
 
-// send_file :: (request: *Request, filename: string) {
-//   html, success := file_cache_get_or_create(filename);
-//   if !success return;
-
-//   send_html(request, html);
-// }
-
-
-
-
-
-
-
-
-
 
 
 
@@ -263,12 +248,10 @@ recv_http_request :: (socket: MySocket) -> Request {
 
 
 #import,dir "modules/mysocket";
-// #import "mysocket";
+
 #scope_file
 #import,dir "modules/mybasic";
-// #import "mybasic";
 #import,dir "modules/mywindows";
-// #import "mywindows";
 #import "File";
 #import "String";
 #import "Thread";

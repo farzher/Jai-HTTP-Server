@@ -1,1 +1,1 @@
-jai-linux first.jai -x64 && sudo ./first
+jai-linux first.jai -release && sudo ./first

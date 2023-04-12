@@ -2,12 +2,21 @@ BACKLOG               :: 1024;
 MAX_EVENTS            :: BACKLOG;
 REQUEST_BUFFER_LEN    :: 1024 * 2;
 
+CORE_COUNT            :: #run -> int {
+  #import "System";
+  thread_count := get_number_of_processors();
+  mylog("get_number_of_processors() =", thread_count);
+  core_count := max(1, get_number_of_processors() / 2);
+  mylog("setting CORE_COUNT (and THREAD_POOL_COUNT) to", core_count);
+  return core_count;
+}
+
 // performance is signifigantly worse when we don't divide num processors by 2!
 // 8700k (6 cores, 12 threads)
 // wrk --latency -t6 -c100 -d10 http://localhost
 // THREAD_POOL_COUNT :: #run get_number_of_processors()      # Req/Sec    52.76k
 // THREAD_POOL_COUNT :: #run get_number_of_processors() / 2  # Req/Sec    81.54k
-THREAD_POOL_COUNT     :: #run get_number_of_processors() / 2; #import "System";
+THREAD_POOL_COUNT     :: CORE_COUNT;
 
 thread_pool           : [THREAD_POOL_COUNT] Thread;
 epoll_fd_pool         : [THREAD_POOL_COUNT] s32;
@@ -163,7 +172,6 @@ new_request_from_pool :: (client_socket: Socket) -> *Request {
 
   if !request.raw.data {
     request.raw = alloc_string(REQUEST_BUFFER_LEN);
-    request.raw_allocated = REQUEST_BUFFER_LEN;
   }
   request.raw.count = 0;
 
@@ -348,15 +356,13 @@ add_to_epoll_fd_list :: (epoll_fd: s32, fd: s32, ptr: *void, ep_events: u32, $mo
 
 
 
-// #import,file "modules/mybasic";
 #import,dir "modules/openssl";
 #import,dir "modules/mybasic";
 #import,dir "modules/mysocket";
 
 #import "File";
-#import "String";
 #import "POSIX";
-TCP_NODELAY :: 1;
-SO_KEEPALIVE   :: 0x0008;
-
 #import "Thread";
+
+TCP_NODELAY    :: 1;
+SO_KEEPALIVE   :: 0x0008;
