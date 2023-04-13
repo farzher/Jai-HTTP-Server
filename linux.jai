@@ -1,3 +1,7 @@
+// TODO: make it so the server doesn't crash under high concurrency
+// wrk --latency -t6 -c10000 -d1 http://localhost/bench
+// BACKLOG needs to be tweaked, and the way the request_pool works? not sure what's crashing us
+
 BACKLOG               :: 1024;
 MAX_EVENTS            :: BACKLOG;
 REQUEST_BUFFER_LEN    :: 1024 * 2;
@@ -55,7 +59,7 @@ http_listen :: (port: u16 = 80, ip: string = "0.0.0.0") {
 listen_socket_ssl: Socket;
 listen_called_ssl: bool;
 https_listen :: (port: u16 = 443, ip: string = "0.0.0.0", certificate: string = "", privatekey: string = "") {
-  assert(listen_called, "http_listen must be called first for now. because i'm lazy to deal with threads");
+  assert(listen_called, "http_listen must be called first for now. because it does setup stuff that i'm lazy to deal with");
   assert(!listen_called_ssl, "cannot call listen multiple times");
   listen_called_ssl = true;
 
@@ -114,17 +118,11 @@ thread_pool_proc :: (thread: *Thread) -> s64 {
         the_listen_socket := event.data.fd;
         while 1 {
           client_socket := accept(the_listen_socket, cast(*sockaddr)*client_addr, *client_addr_len);
-          if client_socket < 0 {
-            if errno() == EWOULDBLOCK {
-              // add_to_epoll_fd_list(epoll_fd, the_listen_socket, null, EPOLLIN | EPOLLET | EPOLLONESHOT, mod=true);
-              break;
-            }
-            die("accept()", errno());
-          }
-          // mylog("accepted by thread", thread_id);
+
+          if client_socket < 0 then break;
 
           setnonblocking(client_socket);
-          setsocktcpopt(client_socket, TCP_NODELAY);
+          setsocktcpopt(client_socket, TCP_NODELAY); // @crash setsocktcpopt err: 9 socket: 190 option: 1 val: 1
           add_to_epoll_fd_list(epoll_fd, client_socket, null, EPOLLIN/* | EPOLLET | EPOLLONESHOT*/);
 
           if event.data.fd == listen_socket_ssl then ssl_make_socket_ssl(client_socket);
@@ -351,6 +349,25 @@ add_to_epoll_fd_list :: (epoll_fd: s32, fd: s32, ptr: *void, ep_events: u32, $mo
 // remove_from_epoll_fd_list :: (fd: s32) {
 //   if epoll_ctl(epoll_fd, EPOLL_CTL_DEL, fd, null)  die("remove epoll_ctl()");
 // }
+
+
+
+
+get_sockaddr_in_from_socket :: (socket: s32) -> sockaddr_in {
+  addr_in: sockaddr_in;
+  sizeof_sockaddr_in : u32 = size_of(type_of(addr_in));
+  getpeername(socket, cast(*sockaddr)*addr_in, *sizeof_sockaddr_in);
+  return addr_in;
+}
+get_ip_string_from_socket :: (socket: s32) -> string {
+  addr_in := get_sockaddr_in_from_socket(socket);
+
+  INET_ADDRSTRLEN :: 16;
+  cstr := talloc(INET_ADDRSTRLEN);
+  inet_ntop(AF_INET, *addr_in.sin_addr.s_addr, cstr, INET_ADDRSTRLEN);
+  return fromcstr(cstr);
+}
+
 
 
 

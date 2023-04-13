@@ -65,11 +65,7 @@ Cast :: (val: $T, $type: Type) -> type #expand {
 }
 
 
-die :: (args: ..Any) {
-  mylog("[Fatal Error]");
-  mylog(..args);
-  exit(1);
-}
+die :: (args: ..Any) {mylog("[die]"); mylog(..args); exit(1); }
 
 RELEASE :: #run () -> bool {
   Compiler :: #import "Compiler";
@@ -89,6 +85,8 @@ push_tallocator :: () #expand {
 
   context.allocator        = tallocator;
 };
+
+tjoin :: #bake_arguments join(allocator=tallocator);
 
 printF :: () { print("F"); }
 
@@ -290,4 +288,3 @@ my_find_or_add :: (table: *Table, key: table.Key_Type) -> *table.Value_Type, fou
     return result;
   }
 }
-

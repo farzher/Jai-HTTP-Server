@@ -180,12 +180,12 @@ static :: (folder: string) {
 
   get("*", (request: *Request) {;
 
-    // if the path ends wht a / (it's a folder), then we'll add index.html to the end of the path to load that.
+    // if the path ends wht a / then we consider it a folder, and we'll add index.html to the end of the path to load that.
     path: string;
     if ends_with(request.path, "/") {
-      path = join(cwd, "/", the_static_folder_to_serve, request.path, "index.html", allocator=tallocator);
+      path = tjoin(cwd, "/", the_static_folder_to_serve, request.path, "index.html");
     } else {
-      path = join(cwd, "/", the_static_folder_to_serve, request.path, allocator=tallocator);
+      path = tjoin(cwd, "/", the_static_folder_to_serve, request.path);
     }
 
     send_file(request, path);
