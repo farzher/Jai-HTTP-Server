@@ -64,21 +64,23 @@ send_file :: (request: *Request, raw_filename: string) {
 parseheaders :: true;
 Request :: struct {
   #as socket      : MySocket;
+
   raw             : string; // entire raw http request
   body            : string; // pointer into raw
   path            : string; // pointer into raw
-  params          : Table(string, string);
+
   content_length  : u32;
   method          : METHOD;
-  response_sent   : bool;
-  err             : bool;
-
   websocket_key   : string;
   accept_encoding : string;
 
+  params          : Table(string, string);
   #if parseheaders {
     headers       : Table(string, string);
   }
+
+  response_sent   : bool;
+  err             : bool;
 
   #if OS == .LINUX {
     buffercursor  : u32;
@@ -162,21 +164,14 @@ handle_request :: (request: *Request) {
 }
 
 
-
-
-
-
-
-
-the_static_folder_to_serve: string;
 cwd: string;
+the_static_folder_to_serve: string;
 static :: (folder: string) {
-
   assert(folder.count > 0, "folder to serve can't be an empty string");
   assert(the_static_folder_to_serve.count == 0, "you can't currently static serve more than 1 folder");
 
-  the_static_folder_to_serve = folder;
   cwd = copy_string(get_working_directory());
+  the_static_folder_to_serve = folder;
 
   get("*", (request: *Request) {;
 
@@ -194,25 +189,14 @@ static :: (folder: string) {
 
 
 
-File_Cache_Record :: struct {
-  rawcontent: string;
-  brotli: string;
-}
 
-// storing hash of the filename instead of string incase the string is in temp storage!
-// given_hash_function just returns itself since its already hashed... no need to hash twice, right? @perf
-// file_cache: Table(u32, File_Cache_Record, given_hash_function=(x: $T) -> u32 {return x;});
-// file_cache: Table(u32, File_Cache_Record);
+// when we cache a file, we store both the raw content and also the brotli compressed version of it
+File_Cache_Record :: struct {rawcontent: string; brotli: string; }
 file_cache: Table(string, File_Cache_Record);
 
 file_cache_get_or_create :: (filename: string) -> File_Cache_Record, bool {
 
-  // Hash  :: #import "Hash";
-  // filename_hash := Hash.get_hash(filename);
-
-
   #if OS != .WINDOWS { // don't actually cache files on windows. for better development experience
-    // record, found := table_find(*file_cache, filename_hash);
     record, found := table_find(*file_cache, filename);
     if found then return record, true;
   }
@@ -220,8 +204,6 @@ file_cache_get_or_create :: (filename: string) -> File_Cache_Record, bool {
   filetext, success := read_entire_file(filename);
   if !success return .{}, false;
 
-
-  // file_cache_record := table_set(*file_cache, filename_hash, .{});
 
   // just incase filename is in temporary storage
   // we have to leak a copy of it here to store in the table that won't turn to garbage

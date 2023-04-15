@@ -247,12 +247,10 @@ recv_http_request :: (socket: MySocket) -> Request {
 
 
 
+#import,dir "modules/mybasic";
 #import,dir "modules/mysocket";
 
-#scope_file
-#import,dir "modules/mybasic";
-#import,dir "modules/mywindows";
+#import "Windows";
 #import "File";
-#import "String";
 #import "Thread";
 release :: (sema: Semaphore) {ReleaseSemaphore(sema.event, 1, null); }

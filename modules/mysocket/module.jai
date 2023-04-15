@@ -1,8 +1,7 @@
 using,except(MSG) #import "Socket";
 
-MySocket :: struct { // used for function overloading, ex: listen(Socket, s32) vs listen(MySocket, s32)
-  #as socket: Socket;
-}
+// used for function overloading, ex: listen(Socket, s32) vs listen(MySocket, s32)
+MySocket :: struct {#as socket: Socket; }
 
 // socket_init
 // socket_init
@@ -23,6 +22,10 @@ socket_close :: (socket: Socket) {
 }
 
 #if OS == .LINUX {
+
+  #import "POSIX";
+  libc :: #system_library "libc";
+
   sendfile :: (out_fd: s32, in_fd: s32, offset: *off_t, count: size_t) -> ssize_t #foreign libc;
 
   send :: inline (fd: s32, msg: string) -> s64 {
@@ -111,43 +114,4 @@ socket_close :: (socket: Socket) {
   }
 }
 
-
-
-
-
-
-
-#scope_file
-
-// #import "../modules/mybasic";
-#import "Basic";
-#import "String";
-mylog :: (args:..Any) {
-  if args.count == 0 { print("\n"); return; }
-
-  formatstr: string;
-  push_tallocator();
-  for args  formatstr = join(formatstr, "% ");
-  formatstr[formatstr.count-1] = #char "\n"; // replace the trailing space with a newline
-  print(formatstr, ..args);
-}
-tallocator :: __temporary_allocator;
-push_tallocator :: () #expand {
-  old_allocator           := context.allocator;
-  `defer context.allocator = old_allocator;
-
-  context.allocator        = tallocator;
-};
-
-
-#if OS == .LINUX {
-  #import "POSIX";
-  libc :: #system_library "libc";
-}
-
-
-
-
-
-// #if OS == .WINDOWS  #load "windows.jai";
-// #if OS == .LINUX    #load "linux.jai";
+#import,dir "../mybasic";
