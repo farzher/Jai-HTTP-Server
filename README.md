@@ -125,5 +125,5 @@ Transfer/sec:      1.51MB
 
 
 ## Usage
-0. have the compiler v0.1.60
+0. have the compiler v0.1.73
 1. run `examples/hello/run.bat` or `examples/hello/run.sh`

@@ -30,15 +30,15 @@ any  :: (path: string, cb: (*Request)->()) {array_add(*middlewares, .{method=.AN
 
 send_html :: (request: *Request, html: string, status_code: u16 = 200, content_type: string = "text/html", content_encoding: string = "") {
   // todo: status_code 404 is responding with 404 OK; lol
-  content_encoding_header := ifx content_encoding then tprint("Content-Encoding: %\r\n", content_encoding) else "";
-  http_response := tprint("HTTP/1.1 % OK\r\nConnection: Keep-Alive\r\nContent-Length: %\r\nContent-Type: %; charset=UTF-8\r\n%Server: Jai\r\n\r\n%", status_code, html.count, content_type, content_encoding_header, html);
+  content_encoding_header := ifx content_encoding then tprint("\r\nContent-Encoding: %", content_encoding) else "";
+  http_response := tprint("HTTP/1.1 % OK\r\nContent-Length: %\r\nContent-Type: %; charset=UTF-8%\r\n\r\n%", status_code, html.count, content_type, content_encoding_header, html);
 
   mysocket_write(request.socket, http_response);
   request.response_sent = true;
 }
 
 send_json :: (request: *Request, json: string) {
-  http_response := tprint("HTTP/1.1 200 OK\r\nConnection: Keep-Alive\r\nContent-Length: %\r\nContent-Type: application/json\r\n\r\n%", json.count, json);
+  http_response := tprint("HTTP/1.1 200 OK\r\nContent-Length: %\r\nContent-Type: application/json\r\n\r\n%", json.count, json);
   mysocket_write(request.socket, http_response);
   request.response_sent = true;
 }
@@ -86,6 +86,12 @@ Request :: struct {
     buffercursor  : u32;
     startofline   : u32;
   }
+
+  get_param :: (request: *Request, name: string) -> string {
+    val, found := table_find(*request.params, name);
+    if !found return "";
+    return val;
+  }
 }
 operator == :: inline (a: Request, b: Request) -> bool {return a.socket == b.socket; }
 
@@ -98,47 +104,6 @@ does_request_accept_encoding :: (request: *Request, encoding: string) -> bool {
 }
 
 handle_request :: (request: *Request) {
-  path_normal := normalize_path(request.path);
-
-  if request.websocket_key {
-    if table_find_pointer(*websocket_servers, path_normal) {
-      websocket_handle_request(request);
-    } else {
-      // todo: received a websocket request for a path we're not listening to. maybe some kind of notification, send a proper decline response?
-    }
-  }
-
-  // let the user's middleware handle the request!
-  for middleware: middlewares {
-
-    if request.response_sent then break; // once a middleware handles the request, we stop. this is first because webhook could've handled it already
-
-    if middleware.method != .ANY && middleware.method != request.method then continue;
-    // if middleware.path != "*" && middleware.path != request.path then continue;
-    if middleware.path != "*" && !is_path_match(middleware.path, path_normal) then continue;
-
-    middleware_contains_params := contains_prams(middleware.path);
-    if middleware_contains_params {
-      middleware_path_split := split(middleware.path, "/");
-      request_path_split := split(path_normal, "/");
-      for middleware_path_split {
-        if !contains_prams(it) continue;
-        param_name := middleware_path_split[it_index];
-        param_name.data += 1;
-        param_name.count -= 1;
-        // array_add(request.params, request_path_split[it_index]);
-        // request.params[param_name] = request_path_split[it_index];
-        // table_add(request.params, param_name, request_path_split[it_index]);
-        request.params[param_name] = request_path_split[it_index];
-      }
-    }
-
-    middleware.cb(request);
-  }
-
-  // if none of the middleware responded to this request, 404
-  if !request.response_sent then send_html(request, tprint("<pre>Cannot % %</pre>", request.method, request.path), status_code=404);
-
 
   contains_prams :: (s: string) -> bool {
     return contains(s, ":");
@@ -161,6 +126,48 @@ handle_request :: (request: *Request) {
 
     return true;
   }
+
+  path_normal := normalize_path(request.path);
+
+  if request.websocket_key {
+    if table_find_pointer(*websocket_servers, path_normal) {
+      websocket_handle_request(request);
+    } else {
+      // todo: received a websocket request for a path we're not listening to. maybe some kind of notification, send a proper decline response?
+    }
+  }
+
+  // let the user's middleware handle the request!
+  for middleware: middlewares {
+
+    if request.response_sent then break; // once a middleware handles the request, we stop. this is first because webhook could've handled it already
+
+    if middleware.method != .ANY && middleware.method != request.method then continue;
+    // if middleware.path != "*" && middleware.path != request.path then continue;
+    if middleware.path != "*" && !is_path_match(middleware.path, path_normal) then continue;
+
+    table_reset(*request.params); // maybe this should happen somewhere else?
+    middleware_contains_params := contains_prams(middleware.path);
+    if middleware_contains_params {
+      middleware_path_split := split(middleware.path, "/");
+      request_path_split := split(path_normal, "/");
+      for middleware_path_split {
+        if !contains_prams(it) continue;
+        param_name := middleware_path_split[it_index];
+        param_name.data += 1;
+        param_name.count -= 1;
+        // array_add(request.params, request_path_split[it_index]);
+        // request.params[param_name] = request_path_split[it_index];
+        table_add(*request.params, param_name, request_path_split[it_index]);
+        // request.params[param_name] = request_path_split[it_index];
+      }
+    }
+
+    middleware.cb(request);
+  }
+
+  // if none of the middleware responded to this request, 404
+  if !request.response_sent then send_html(request, tprint("<pre>Cannot % %</pre>", request.method, request.path), status_code=404);
 }
 
 
@@ -258,6 +265,8 @@ extension2contenttype :: (filename: string) -> string {
     case ".ico";  return "image/x-icon";
     case ".jpg";  return "image/jpeg";
     case ".jpeg"; return "image/jpeg";
+    case ".ini";  return "text/plain";
+    case ".txt";  return "text/plain";
   }
 
   return "text/html";

@@ -81,12 +81,6 @@ ssl_accept :: (ssl: *SSL) {
 }
 
 ssl_print_errors :: () {
-  while 1 {
-    err := ERR_get_error();
-    if err <= 0 break;
-
-    print("ssl_error: %\n", fromcstr(ERR_error_string(err, null)));
-  }
 
   fromcstr :: (cstr: *u8) -> string {
     ret: string;
@@ -94,6 +88,13 @@ ssl_print_errors :: () {
     ret.data = xx cstr;
     ret.count = c_style_strlen(xx cstr);
     return ret;
+  }
+
+  while 1 {
+    err := ERR_get_error();
+    if err <= 0 break;
+
+    print("ssl_error: %\n", fromcstr(ERR_error_string(err, null)));
   }
 }
 

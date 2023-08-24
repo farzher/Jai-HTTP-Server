@@ -148,6 +148,20 @@ websocket_send :: (ws: *Websocket, payload: string = "", op_code: Websocket.OPCO
 
 websocket_handle_request :: (request: *Request) {
 
+  websocket_send_request_handshake_accepted :: (request: *Request) {
+
+    hash_ws_key :: (Sec_WebSocket_Key: string) -> string {
+      data := tjoin(Sec_WebSocket_Key, "258EAFA5-E914-47DA-95CA-C5AB0DC85B11");
+      websocket_key_hash := base64_encode(xx sha1_binary(data)); #import,dir "modules/sha1"; #import "Base64";
+      return websocket_key_hash;
+    }
+    websocket_key_response := hash_ws_key(request.websocket_key);
+
+    http_response := tprint("HTTP/1.1 101 Switching Protocols\r\nConnection: Upgrade\r\nUpgrade: websocket\r\nSec-WebSocket-Accept: %\r\n\r\n", websocket_key_response);
+    send(request.socket, http_response);
+    request.response_sent = true;
+  }
+
   websocket_send_request_handshake_accepted(request);
 
   ws := websocket_new(request);
@@ -156,20 +170,6 @@ websocket_handle_request :: (request: *Request) {
   websocket_read_frame(ws);
   if ws.err then mylog("unhandled websocket error!!!!");
 
-
-  websocket_send_request_handshake_accepted :: (request: *Request) {
-    websocket_key_response := hash_ws_key(request.websocket_key);
-
-    http_response := tprint("HTTP/1.1 101 Switching Protocols\r\nConnection: Upgrade\r\nUpgrade: websocket\r\nSec-WebSocket-Accept: %\r\n\r\n", websocket_key_response);
-    send(request.socket, http_response);
-    request.response_sent = true;
-
-    hash_ws_key :: (Sec_WebSocket_Key: string) -> string {
-      data := tjoin(Sec_WebSocket_Key, "258EAFA5-E914-47DA-95CA-C5AB0DC85B11");
-      websocket_key_hash := base64_encode(xx sha1_binary(data)); #import,dir "modules/sha1"; #import "Base64_Encode";
-      return websocket_key_hash;
-    }
-  }
 }
 
 websocket_read_frame :: (ws: *Websocket) {
@@ -288,7 +288,6 @@ websocket_read_frame :: (ws: *Websocket) {
             case .TEXT;         #through;
             case .BINARY;       #through;
             case .CONTINUATION; {
-              apply_mask_to_payload();
               apply_mask_to_payload :: () #expand {
                 if is_masked {
                   maskbytes := unsafe_cast(*mask, [4]u8);
@@ -297,6 +296,7 @@ websocket_read_frame :: (ws: *Websocket) {
                   }
                 }
               }
+              apply_mask_to_payload();
 
               // this is complexity for dealing with the annoying fact that a single message can be sent via multiple CONTINUATION frames.
               // we have to allocate a new buffer and copy this frame's payload into it

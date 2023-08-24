@@ -1,0 +1,71 @@
+:root{--red:rgb(203,95,93);--white:rgb(255,255,255);--dark:rgb(26,26,26);--dark-gray:rgb(52,52,52);--blue:rgb(58,175,255);--pink:rgb(187,125,191);--green:rgb(34,255,169);--lavender:rgb(170,175,219);--yellow:rgb(189,190,130);--teal:rgb(143,194,187);--gray:rgb(173,174,178);--red2:rgb(255,67,119);--pink2:rgb(239,106,167);--purple:rgb(139,108,207);--brown:rgb(161,120,76)}
+body {background:var(--dark); color:var(--gray);}
+body {overflow-y:scroll; font-family: SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;}
+::-webkit-scrollbar{width:7px;height:7px}::-webkit-scrollbar-track{background:var(--dark)}::-webkit-scrollbar-thumb{background:var(--dark-gray)}::-webkit-scrollbar-thumb:hover{background:var(--red2)}
+::selection {color: white; background-color: var(--red2);}
+a, a:hover {color: var(--blue);}
+textarea, input, textarea:focus, input:focus {background: #111; border:1px solid transparent; color:#999; border: none; outline: none;}
+
+.my-input-hr {
+  border-style: none none solid;
+  border-bottom-width: 2px;
+  border-color: var(--red2);
+  margin: 0px;
+  width: 100%;
+  transform: scaleX(0);
+  opacity: 0;
+  transition: 100ms cubic-bezier(0.23, 1, 0.32, 1) 0ms;
+  transform-origin: 0 0;
+  position: absolute;
+  bottom: 0px;
+}
+
+.my-input:focus + .my-input-hr {
+  transform: scaleX(1);
+  opacity: 1; }
+
+.my-input-div {
+  display: inline-block;
+  position: relative;
+}
+.my-input {
+  background: #111;
+  border: none;
+  /*border-bottom: 1px solid #666;*/
+  color: var(--gray);
+  padding-left: 9px;
+  padding-top: 10px;
+  outline: none;
+  /*line-height: 26px;*/
+  padding-bottom: 5px;
+  border-radius: .25rem;
+  width:100%;
+}
+.my-input-label {
+  transition: 100ms;
+  position: absolute;
+  top:10px;
+  left:10px;
+  /*font-size:14px;*/
+  pointer-events: none;
+  color: #666;
+}
+.my-input:not([data-empty]) +.my-input-hr+ .my-input-label, .my-input:focus +.my-input-hr+ .my-input-label {
+  top:1px;
+  left:4px;
+  font-size:10px;
+}
+.my-input:focus +.my-input-hr+ .my-input-label {
+  color: var(--red2);
+}
+.my-input[disabled] {background: none}
+
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+    /* display: none; <- Crashes Chrome on hover */
+    -webkit-appearance: none;
+    margin: 0; /* <-- Apparently some margin are still there even though it's hidden */
+}
+input[type=number] {
+    -moz-appearance:textfield; /* Firefox */
+}

@@ -18,11 +18,9 @@ main :: () {
   });
 
 
-  get("/hello", (request: *Request) {; send_html(request, "hello world!"); });
-
-
   get("/hello/:name", (request: *Request) {;
-    send_html(request, tprint("Hello %!", request.params["name"]));
+    // send_html(request, tprint("Hello %!", request.params["name"])); // this syntax broken in beta .66
+    send_html(request, tprint("Hello %!", request.get_param(request, "name")), content_type="text/plain");
   });
 
 
@@ -34,13 +32,14 @@ main :: () {
   });
 
 
+  // accept and handle websocket connections at the /ws path
   {
     ws_server := websocket_listen("/ws");
     ws_server.onopen = (ws: *Websocket) {;
-      ws.send(ws, "welcome");
+      ws.send(ws, "SERVER: Welcome to the chat room! Open another tab to chat.");
       mylog("new websocket connected");
     };
-    ws_server.onclose = (ws: *Websocket) {; mylog("websocket died :(", <<ws); };
+    ws_server.onclose = (ws: *Websocket) {; mylog("websocket closed", <<ws); };
     ws_server.onmsg = (ws: *Websocket, msg: string) {
       ws.broadcast(ws, msg); // broadcasts the message to all other connected websockets
       ws.send(ws, msg);      // let's echo the msg back to ourself aswell
@@ -48,6 +47,7 @@ main :: () {
   }
 
 
+  // serve static files from the public folder
   static("public");
 
 
@@ -65,13 +65,3 @@ main :: () {
 
 #import "Basic";
 mylog :: (args: ..Any) {for args print("% ", it); print("\n"); }
-
-#import "Hash_Table";
-operator [] :: (t: Table(string, string), index: string) -> string {
-  result, found := table_find(*t, index);
-  if !found return "";
-  return result;
-}
-operator []= :: (t: *Table(string, string), index: string, value: string) {;
-  table_add(t, index, value);
-}

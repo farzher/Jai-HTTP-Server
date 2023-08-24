@@ -1,36 +1,59 @@
 
+<link rel="stylesheet" href="/global_style.css" />
+<div x-data="alpine()" style="padding:24px; width:480; margin:0 auto">
+
+  <!-- chatlog textarea -->
+  <textarea x-model="chatlog" x-ref="chat" readonly style="width:100%; height:200px;"></textarea>
+
+  <br/><br/>
+
+  <!-- send msg input -->
+  <div style="display: flex; align-items: center">
+    <span x-text="username" style="flex: 1;"></span>
+    <div class="my-input-div" style="flex: 3">
+      <input x-model="msg" @keyup.enter="msg_submit()" class="my-input" autofocus placeholder="Send a message" />
+      <hr class="my-input-hr" />
+    </div>
+
+  </div>
+
+</div>
 
 
-
-
-
-
-
-
-
-
-
-open the dev tools console and view source to see what's happening with the websocket
-
-
-
-
-
-
+<script defer src="/alpinejs@3.12.3.min.js"></script>
 <script>
   var ws = new WebSocket('ws://' + document.location.host + '/ws')
 
-  ws.onopen = () => console.log('onopen')
-  ws.onclose = () => console.log('onclose')
-  ws.onmessage = (msgevent) => { console.log('onmessage:', msgevent.data) }
-  ws.onerror = (error) => console.log('onerror', error)
+  function alpine() {
+    return {
+      username: generate_username(),
+      msg: '',
+      chatlog: '',
 
-  var username = uuidv4()
-  setInterval(() => {
-    ws.send(`${username}: spam`)
-  }, 1000)
+      init() {
+        ws.onmessage = (msgevent) => { this.append(msgevent.data) }
+        ws.onopen = (msgevent) => { ws.send(`${this.username} has entered the chat!`) }
+        window.addEventListener('beforeunload', () => { ws.send(`${this.username} has left the chat.`) })
+      },
 
+      append(chat_msg) {
+        this.chatlog += chat_msg + '\n'
+        this.$refs.chat.scrollTop = this.$refs.chat.scrollHeight
+      },
 
-  function uuidv4() {return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c => (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16) );
-}
+      msg_submit() {
+        ws.send(`${this.username}: ${this.msg}`)
+        this.msg = ''
+      },
+    }
+  }
+
+  function generate_username() {
+    const names1 = ['cool', 'fat', 'cute', 'fast', 'spunky']
+    const names2 = ['gamer', 'kid', 'kitten', 'ninja', 'player']
+    const capitalize = (s) => s.charAt(0).toUpperCase() + s.slice(1)
+    const randfromarr = (a) => a[Math.floor(Math.random()*a.length)]
+    return capitalize(randfromarr(names1)) + capitalize(randfromarr(names2))
+  }
 </script>
+
