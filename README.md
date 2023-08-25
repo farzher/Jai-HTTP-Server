@@ -31,89 +31,108 @@ main :: () {
 
 ## Benchmarks
 
-- CPU: `Intel 8700k (6 cores, 12 threads)`
+- CPU: `Intel 12700 (8 cores, 14 threads (E cores disabled))`
 - OS: `Ubuntu-22.04 (WSL)`
-- Benchmark Command: `wrk --latency -t6 -c100 -d10 http://localhost`
 
-![image](https://user-images.githubusercontent.com/1005136/230886599-d12452b7-7d65-4f73-b1f1-f5a54d3e4926.png)
-
+![image](https://i.imgur.com/o1eqImu.png)
 
 
 
-#### Jai - [Jai-HTTP-Server](https://github.com/farzher/Jai-HTTP-Server) | Req/Sec    100.19k
+
+#### Jai - [Jai-HTTP-Server](https://github.com/farzher/Jai-HTTP-Server) | Req/Sec (526.51k, 1.16M)
 ```
+$ wrk --latency -t1 -c100 -d1 http://localhost
   Thread Stats   Avg      Stdev     Max   +/- Stdev
-    Latency   156.26us  160.79us   9.55ms   91.77%
-    Req/Sec   100.19k     4.45k  108.06k    77.69%
-
+    Latency   114.99us   41.34us 375.00us   71.77%
+    Req/Sec   526.51k     2.29k  529.79k    60.00%
   Latency Distribution
-     50%  117.00us
-     75%  192.00us
-     90%  295.00us
-     99%  663.00us
+     50%   90.00us
+     75%  163.00us
+     90%  178.00us
+     99%  199.00us
 
-  6030627 requests in 10.10s, 741.91MB read
-
-Requests/sec: 597118.74
-Transfer/sec:     73.46MB
-```
-
-
-#### Go - [fasthttp](https://github.com/valyala/fasthttp) | Req/Sec    83.65k
-```
+$ wrk --latency -t8 -c100 -d1 http://localhost
   Thread Stats   Avg      Stdev     Max   +/- Stdev
-    Latency   377.51us    1.04ms  30.35ms   93.91%
-    Req/Sec    83.65k    19.41k  112.94k    54.33%
-
+    Latency    80.23us   55.36us   3.82ms   93.89%
+    Req/Sec   146.36k    12.96k  181.13k    68.18%
   Latency Distribution
-     50%  110.00us
-     75%  202.00us
-     90%  637.00us
-     99%    5.44ms
-
-  5002200 requests in 10.04s, 706.03MB read
-
-Requests/sec: 498380.73
-Transfer/sec:     70.34MB
+     50%   75.00us
+     75%   97.00us
+     90%  120.00us
+     99%  182.00us
 ```
 
 
-#### C - [nginx](https://nginx.org/en/) | Req/Sec    26.98k
+#### Go - [fasthttp](https://github.com/valyala/fasthttp) | Req/Sec (353.35k, 916.12k)
 ```
+$ wrk --latency -t1 -c100 -d1 http://localhost
   Thread Stats   Avg      Stdev     Max   +/- Stdev
-    Latency     2.32ms    4.56ms  51.44ms   88.15%
-    Req/Sec    26.98k     4.33k   45.43k    67.67%
-
+    Latency   150.86us   44.43us 568.00us   89.11%
+    Req/Sec   353.35k     3.13k  357.22k    80.00%
   Latency Distribution
-     50%  389.00us
-     75%    1.38ms
-     90%    8.05ms
-     99%   20.90ms
+     50%  138.00us
+     75%  150.00us
+     90%  186.00us
+     99%  306.00us
 
-  1617850 requests in 10.07s, 397.99MB read
-
-Requests/sec: 160681.34
-Transfer/sec:     39.53MB
-```
-
-
-
-#### Node.js - [express](https://github.com/expressjs/express) | Req/Sec     1.11k
-```
+$ wrk --latency -t8 -c100 -d1 http://localhost
   Thread Stats   Avg      Stdev     Max   +/- Stdev
-    Latency    14.54ms    2.43ms  53.01ms   92.01%
-    Req/Sec     1.11k   126.14     1.29k    81.33%
-
+    Latency   186.13us  520.34us  12.54ms   97.15%
+    Req/Sec   115.16k     4.19k  126.00k    71.59%
   Latency Distribution
-     50%   13.74ms
-     75%   14.73ms
-     90%   16.58ms
-     99%   26.07ms
+     50%   74.00us
+     75%  210.00us
+     90%  395.00us
+     99%    1.29ms
+```
 
-  66124 requests in 10.01s, 15.13MB read
 
-Requests/sec:   6607.94
-Transfer/sec:      1.51MB
+#### C - [nginx](https://nginx.org/en/) | Req/Sec (262.32k, 635.78k)
+```
+$ wrk --latency -t1 -c100 -d1 http://localhost
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency   229.60us  135.18us   1.73ms   86.47%
+    Req/Sec   262.32k    22.41k  294.30k    80.00%
+  Latency Distribution
+     50%  187.00us
+     75%  248.00us
+     90%  374.00us
+     99%  773.00us
+
+$ wrk --latency -t8 -c100 -d1 http://localhost
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     1.17ms    3.11ms  43.37ms   90.78%
+    Req/Sec    85.28k    21.01k  209.25k    93.90%
+  Latency Distribution
+     50%   89.00us
+     75%  263.00us
+     90%    3.85ms
+     99%   15.81ms
+```
+
+
+
+#### Node.js - [express](https://github.com/expressjs/express) | Req/Sec (15.08k, 14.92k)
+```
+$ wrk --latency -t1 -c100 -d1 http://localhost
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     6.64ms  492.35us  11.33ms   85.09%
+    Req/Sec    15.08k   486.73    15.59k    81.82%
+  Latency Distribution
+     50%    6.45ms
+     75%    6.52ms
+     90%    7.58ms
+     99%    8.13ms
+
+$ wrk --latency -t8 -c100 -d1 http://localhost
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     5.98ms    1.45ms  12.59ms   84.73%
+    Req/Sec     2.01k     0.88k    7.51k    97.56%
+  Latency Distribution
+     50%    6.23ms
+     75%    6.30ms
+     90%    7.28ms
+     99%    7.99ms
 ```
 
 
