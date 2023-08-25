@@ -31,7 +31,7 @@ main :: () {
 
 ## Benchmarks
 
-- CPU: `Intel 12700 (8 cores, 14 threads (E cores disabled))`
+- CPU: `Intel 12700 (8 cores, 16 threads (E cores disabled))`
 - OS: `Ubuntu-22.04 (WSL)`
 
 ![image](https://i.imgur.com/o1eqImu.png)
