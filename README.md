@@ -144,5 +144,5 @@ $ wrk --latency -t8 -c100 -d1 http://localhost
 
 
 ## Usage
-0. have the compiler v0.1.73
+0. have the compiler Version: beta 0.1.090, built on 12 April 2024.
 1. run `examples/hello/run.bat` or `examples/hello/run.sh`
