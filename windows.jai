@@ -210,9 +210,12 @@ recv_http_request :: (socket: MySocket) -> Request {
         kv := split(line, ": ");
         #if parseheaders table_add(*request.headers, kv[0], kv[1]);
 
-        if kv[0] == {
-          case "Content-Length";    request.content_length = xx to_integer(kv[1]);
-          case "Sec-WebSocket-Key"; request.websocket_key  = kv[1];
+        if compare_nocase(kv[0], "Content-Length") == 0 {
+          request.content_length = xx to_integer(kv[1]);
+        } else if compare_nocase(kv[0], "Sec-WebSocket-Key") == 0 {
+          request.websocket_key = kv[1];
+        } else if compare_nocase(kv[0], "Accept-Encoding") == 0 {
+          request.accept_encoding = kv[1];
         }
 
         if request.raw[buffercursor+2] == #char "\r" && request.raw[buffercursor+2 + 1] == #char "\n" {
