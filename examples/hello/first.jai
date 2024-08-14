@@ -20,7 +20,7 @@ main :: () {
 
   get("/hello/:name", (request: *Request) {;
     // send_html(request, tprint("Hello %!", request.params["name"])); // this syntax broken in beta .66
-    send_html(request, tprint("Hello %!", request.get_param(request, "name")), content_type="text/plain");
+    send_text(request, tprint("Hello %!", request.get_param(request, "name")));
   });
 
 

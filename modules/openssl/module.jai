@@ -159,10 +159,5 @@ SSL_get_error :: (s: *SSL, ret_code: s32) -> s32 #foreign libssl;
 ERR_get_error :: () -> u64 #foreign libssl;
 ERR_error_string :: (e: u64, buf: *u8) -> *u8 #foreign libssl;
 
-
-// libssl :: #library,no_dll "linux/libssl";
-// libcrypto :: #library,no_dll "linux/libcrypto";
-// libdl :: #library,no_dll "linux/libdl";
-libssl :: #library "linux/libssl";
-libcrypto :: #library "linux/libcrypto";
-
+libssl :: #system_library "libssl";
+libcrypto :: #system_library,link_always "libcrypto";

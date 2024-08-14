@@ -112,34 +112,20 @@ thread_pool_proc :: (thread: *Thread) -> s64 {
   ts: Temporary_Storage; context.temporary_storage = *ts;
 
   while 1 {
+    auto_release_temp();
+
     wait_for(*connection_queue_sema);
     client_socket := work_get();
     defer closesocket(client_socket);
 
-    if client_socket.socket == 0  mylog("wut? socket 0"); // i don't think this has ever happened
-
     while 1 {
+      auto_release_temp();
+
       request := recv_http_request(client_socket);
       if request.err then break;
 
-      path_normal := trim(request.path, "/");
-
-      // let the user's middleware handle the request!
-      for middleware: middlewares {
-        if middleware.method != .ANY && middleware.method != request.method then continue;
-        if middleware.path != "*" && middleware.path != path_normal then continue;
-
-        middleware.cb(*request);
-        if request.response_sent then break; // once a middleware handles the request, we stop
-      }
-
-      // if none of the middleware responded to this request, 404
-      if !request.response_sent then send_html(*request, tprint("<pre>Cannot % %</pre>", request.method, request.path), status_code=404);
-
-      tfree();
+      handle_request(*request);
     }
-
-    tfree();
   }
 
   return 0;

@@ -19,28 +19,39 @@ Middleware :: struct {
   cb: (*Request)->();
 }
 
-get  :: (path: string, cb: (*Request)->()) {array_add(*middlewares, .{method=.GET , cb=cb, path=normalize_path(path)}); }
-post :: (path: string, cb: (*Request)->()) {array_add(*middlewares, .{method=.POST, cb=cb, path=normalize_path(path)}); }
-any  :: (path: string, cb: (*Request)->()) {array_add(*middlewares, .{method=.ANY , cb=cb, path=normalize_path(path)}); }
+get    :: (path: string, cb: (*Request)->()) {array_add(*middlewares, .{method=.GET,    cb=cb, path=normalize_path(path)}); }
+post   :: (path: string, cb: (*Request)->()) {array_add(*middlewares, .{method=.POST,   cb=cb, path=normalize_path(path)}); }
+put    :: (path: string, cb: (*Request)->()) {array_add(*middlewares, .{method=.PUT,    cb=cb, path=normalize_path(path)}); }
+delete :: (path: string, cb: (*Request)->()) {array_add(*middlewares, .{method=.DELETE, cb=cb, path=normalize_path(path)}); }
+any    :: (path: string, cb: (*Request)->()) {array_add(*middlewares, .{method=.ANY,    cb=cb, path=normalize_path(path)}); }
 
 
 
 
 
 
-send_html :: (request: *Request, html: string, status_code: u16 = 200, content_type: string = "text/html", content_encoding: string = "") {
-  // todo: status_code 404 is responding with 404 OK; lol
+send_html     :: #bake_arguments send_response(content_type="text/html");
+send_text     :: #bake_arguments send_response(content_type="text/plain");
+send_json     :: #bake_arguments send_response(content_type="application/json");
+send_response :: (request: *Request, content: string, status_code: u16 = 200, content_type: string = "text/plain", content_encoding: string = "") {
+  // todo: status_code 404 is responding with "404 OK" lol
   content_encoding_header := ifx content_encoding then tprint("\r\nContent-Encoding: %", content_encoding) else "";
-  http_response := tprint("HTTP/1.1 % OK\r\nContent-Length: %\r\nContent-Type: %; charset=UTF-8%\r\n\r\n%", status_code, html.count, content_type, content_encoding_header, html);
+  http_response := tprint("HTTP/1.1 % OK\r\nContent-Length: %\r\nContent-Type: %; charset=UTF-8%\r\n\r\n%", status_code, content.count, content_type, content_encoding_header, content);
 
-  mysocket_write(request.socket, http_response);
   request.response_sent = true;
-}
 
-send_json :: (request: *Request, json: string) {
-  http_response := tprint("HTTP/1.1 200 OK\r\nContent-Length: %\r\nContent-Type: application/json\r\n\r\n%", json.count, json);
-  mysocket_write(request.socket, http_response);
-  request.response_sent = true;
+  #if OS == .WINDOWS {
+    mysocket_write(request.socket, http_response);
+  } else {
+    bytes_sent := mysocket_write(request.socket, http_response);
+    if bytes_sent < http_response.count {
+      write_data := alloc_string(http_response.count - bytes_sent);
+      memcpy(write_data.data, http_response.data + bytes_sent, write_data.count);
+      request.write_data       = write_data;
+      request.write_bytes_sent = 0;
+      continue_write(request);
+    }
+  }
 }
 
 send_file :: (request: *Request, raw_filename: string) {
@@ -57,7 +68,7 @@ send_file :: (request: *Request, raw_filename: string) {
   content := ifx are_we_returning_br then file_cache_record.brotli else file_cache_record.rawcontent;
   content_encoding := ifx are_we_returning_br then "br" else "";
   content_type := extension2contenttype(filename);
-  send_html(request, content, content_type=content_type, content_encoding=content_encoding);
+  send_response(request, content, content_type=content_type, content_encoding=content_encoding);
 }
 
 
@@ -83,8 +94,13 @@ Request :: struct {
   err             : bool;
 
   #if OS == .LINUX {
-    buffercursor  : u32;
-    startofline   : u32;
+    buffercursor     : u32;
+    startofline      : u32;
+
+    write_data       : string;
+    write_bytes_sent : int;
+
+    epoll_fd         : s32;
   }
 
   get_param :: (request: *Request, name: string) -> string {
@@ -138,6 +154,7 @@ handle_request :: (request: *Request) {
   }
 
   // let the user's middleware handle the request!
+  // use tries instead of a for loop ... @perf
   for middleware: middlewares {
 
     if request.response_sent then break; // once a middleware handles the request, we stop. this is first because webhook could've handled it already
@@ -167,7 +184,7 @@ handle_request :: (request: *Request) {
   }
 
   // if none of the middleware responded to this request, 404
-  if !request.response_sent then send_html(request, tprint("<pre>Cannot % %</pre>", request.method, request.path), status_code=404);
+  if !request.response_sent then send_text(request, tprint("Cannot % %", request.method, request.path), status_code=404);
 }
 
 
@@ -245,14 +262,12 @@ to_METHOD :: (str: string) -> METHOD {
 }
 
 
-
+// Content-Type aka MIME type
 extension2contenttype :: (filename: string) -> string {
   index_of_dot := find_index_from_right(filename, ".");
   if index_of_dot == -1 return "text/html";
 
-  extension: string;
-  extension.data = filename.data + index_of_dot;
-  extension.count = filename.count - index_of_dot;
+  extension := substr(filename, index_of_dot, filename.count-index_of_dot);
 
   if extension == {
     case ".css";  return "text/css";
@@ -265,8 +280,10 @@ extension2contenttype :: (filename: string) -> string {
     case ".ico";  return "image/x-icon";
     case ".jpg";  return "image/jpeg";
     case ".jpeg"; return "image/jpeg";
+    case ".svg";  return "image/svg+xml";
     case ".ini";  return "text/plain";
     case ".txt";  return "text/plain";
+    case ".exe";  return "application/octet-stream";
   }
 
   return "text/html";

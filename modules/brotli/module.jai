@@ -56,6 +56,7 @@ using BrotliEncoderMode :: enum s32 {BROTLI_MODE_GENERIC :: 0; BROTLI_MODE_TEXT 
     #scope_file
 
     brotli :: #library,no_dll "linux/libbrotli";
+    libm :: #system_library,link_always "libm";
     #import "POSIX";
 
 
