@@ -139,7 +139,7 @@ thread_pool_proc :: (thread: *Thread) -> s64 {
 
       if event.events & EPOLLOUT {
         client_socket := event.data.fd;
-        request := table_find_pointer(*request_pool, client_socket);
+        request := table_find_pointer(*request_pool[thread_id], client_socket);
         if !request || !request.write_data continue;
         continue_write(request);
         continue;
