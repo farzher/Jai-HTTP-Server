@@ -104,7 +104,7 @@ Request :: struct {
   }
 
   get_param :: (request: *Request, name: string) -> string {
-    val, found := table_find(*request.params, name);
+    found, val := table_find(*request.params, name);
     if !found return "";
     return val;
   }

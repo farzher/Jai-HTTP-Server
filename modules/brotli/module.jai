@@ -74,7 +74,7 @@ using BrotliEncoderMode :: enum s32 {BROTLI_MODE_GENERIC :: 0; BROTLI_MODE_TEXT 
         encoded_size: *size_t,
         encoded_buffer: *u8
     ) -> BROTLI_BOOL {
-        <<encoded_size = 0;
+        encoded_size.* = 0;
         return 0;
     }
 }

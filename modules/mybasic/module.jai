@@ -8,7 +8,7 @@ using Basic :: #import "Basic";
 mylog :: (args: ..Any) {for args print("% ", it); print("\n"); }
 die :: (args: ..Any) {mylog("[die]"); mylog(..args); exit(1); }
 
-unsafe_cast :: (val: *$T, $type: Type) -> type #expand {return <<cast(*type)(val); }
+unsafe_cast :: (val: *$T, $type: Type) -> type #expand {return (.*)cast(*type)(val); }
 Cast :: (val: $T, $type: Type) -> type #expand {return cast(type)(val); }
 
 default_allocator :: context.default_allocator;
@@ -27,7 +27,7 @@ push_tallocator :: () #expand {
 
 tjoin :: #bake_arguments join(,,allocator=tallocator);
 
-substr :: inline (str: string, index: int, count: int = 0) -> string #must {
+substr :: inline (str: string, index: int, count: int = 0) -> string {
   if count == 0 count = str.count - index;
 
   c: string = ---;

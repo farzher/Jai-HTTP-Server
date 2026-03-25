@@ -39,7 +39,7 @@ main :: () {
       ws.send(ws, "SERVER: Welcome to the chat room! Open another tab to chat.");
       mylog("new websocket connected");
     };
-    ws_server.onclose = (ws: *Websocket) {; mylog("websocket closed", <<ws); };
+    ws_server.onclose = (ws: *Websocket) {; mylog("websocket closed", ws.*); };
     ws_server.onmsg = (ws: *Websocket, msg: string) {
       ws.broadcast(ws, msg); // broadcasts the message to all other connected websockets
       ws.send(ws, msg);      // let's echo the msg back to ourself aswell

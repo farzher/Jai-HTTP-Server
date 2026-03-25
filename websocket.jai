@@ -411,7 +411,7 @@ array_unordered_remove_by_value :: inline (array: *[..] $T, item: T, $stop_after
   // Probably want to say something to debug memory trackers here.
   // Need to make sure it doesn't cost anything in Release.
   removed := 0;
-  for <<array  if it == item {
+  for array.*  if it == item {
     removed += 1;
     remove it;
 
